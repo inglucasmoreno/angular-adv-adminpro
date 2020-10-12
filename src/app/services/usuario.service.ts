@@ -6,6 +6,7 @@ import { Observable, of } from 'rxjs';
 import { tap, map, catchError } from 'rxjs/operators';
 import { LoginForm } from '../interfaces/login-form-interface';
 import { Router } from '@angular/router';
+import { Usuario } from '../models/usuario.model';
 
 const base_url = environment.base_url;
 declare const gapi: any;
@@ -16,6 +17,7 @@ declare const gapi: any;
 export class UsuarioService {
 
   public auth2: any;
+  public usuario: Usuario;
 
   constructor( private http: HttpClient,
                private router: Router,
@@ -23,7 +25,15 @@ export class UsuarioService {
     this.googleInit();
   }
 
-   googleInit() {
+  get token(): string{
+    return localStorage.getItem('token') || '';
+  }
+
+  get uid(): string{
+    return this.usuario.uid || '';
+  }
+
+  googleInit(): Promise<any>{
     return new Promise( resolve => {
       console.log('google init');
       gapi.load('auth2', () => {
@@ -47,16 +57,17 @@ export class UsuarioService {
   }
 
   validarToken(): Observable<boolean>{
-    const token = localStorage.getItem('token') || '';
     return this.http.get(`${ base_url }/auth/renew`, {
       headers: {
-        'x-token': token
+        'x-token': this.token
       }
     }).pipe(
-      tap( (resp: any) => {  // Permite realizar una accion secundaria
+      map( (resp: any) => {  // Permite realizar una accion secundaria
+        const { email, google, nombre, role, img = '', uid } = resp.usuario;
+        this.usuario = new Usuario( nombre, email, '', img, google, role, uid );
         localStorage.setItem('token', resp.token);
+        return true;
       }),
-      map( resp => true ),
       catchError( error => of(false) ) // Atrapa el error y devuelve un Observable<false>
     );
   }
@@ -68,6 +79,17 @@ export class UsuarioService {
                     localStorage.setItem('token', resp.token);
                   })
                );
+  }
+
+  actualizarPerfil( data: { email: string, nombre: string, role: string } ): Observable<any>{
+
+    data = {
+      ...data,
+      role: this.usuario.role
+    }
+    return this.http.put(`${base_url}/usuarios/${this.uid}`, data, { headers: {
+      'x-token': this.token
+    }});
   }
 
   // Autenticacion Local
