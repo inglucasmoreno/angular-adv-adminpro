@@ -72,6 +72,7 @@ export class UsuarioService {
       }
     }).pipe(
       map( (resp: any) => {  // Permite realizar una accion secundaria
+        console.log(resp.token);
         const { email, google, nombre, role, img = '', uid } = resp.usuario;
         this.usuario = new Usuario( nombre, email, '', img, google, role, uid );
         localStorage.setItem('token', resp.token);
@@ -141,6 +142,8 @@ export class UsuarioService {
   }
 
   guardarUsuario( usuario: Usuario): Observable<any>{
+    console.log(usuario.uid);
+    console.log(usuario);
     return this.http.put(`${base_url}/usuarios/${usuario.uid}`, usuario, this.headers);
   }
 
