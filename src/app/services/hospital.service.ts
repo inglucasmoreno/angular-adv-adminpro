@@ -18,7 +18,7 @@ export class HospitalService {
     return localStorage.getItem('token') || '';
   }
 
-  get headers() {
+  get headers(){
     return{
       headers: {
         'x-token': this.token

@@ -5,6 +5,7 @@ import Swal from 'sweetalert2';
 import { ModalImagenService } from '../../../services/modal-imagen.service';
 import { Subscription } from 'rxjs';
 import { delay } from 'rxjs/operators';
+import { BusquedasService } from '../../../services/busquedas.service';
 
 @Component({
   selector: 'app-hospitales',
@@ -15,11 +16,13 @@ import { delay } from 'rxjs/operators';
 export class HospitalesComponent implements OnInit, OnDestroy {
 
   public hospitales: Hospital[] = [];
+  public hospitalesTemp: Hospital[] = [];
   public cargando = true;
   private imgSubs: Subscription;
 
   constructor(private hospitalService: HospitalService,
-              private modalImagenService: ModalImagenService) { }
+              private modalImagenService: ModalImagenService,
+              private busquedaService: BusquedasService) { }
 
     ngOnDestroy(): void {
       this.imgSubs.unsubscribe();  // IMPORTANTE - Se desubscribe para evitar fuga de memoria
@@ -36,13 +39,26 @@ export class HospitalesComponent implements OnInit, OnDestroy {
     });
   }
 
+  buscar( termino: string ): any{
+
+    if (termino.length === 0){
+      return this.hospitales = this.hospitalesTemp;
+    }
+
+    this.busquedaService.buscar('hospitales', termino)
+        .subscribe( (resultados: Hospital[]) => {
+          this.hospitales = resultados;
+        });
+  }
+
   cargarHospitales(): void {
       this.cargando = true;
       this.hospitalService.cargarHospitales()
-          .subscribe( hospitales => {
-            this.hospitales = hospitales;
-            this.cargando = false;
-          });
+      .subscribe( hospitales => {
+        this.hospitalesTemp = hospitales;
+        this.hospitales = hospitales;
+        this.cargando = false;
+      });
   }
 
   guardarCambios(hospital: Hospital): void{
@@ -75,7 +91,7 @@ export class HospitalesComponent implements OnInit, OnDestroy {
   }
 
   async abrirSweetaler() {
-    const { value } = await Swal.fire<string>({
+    const { value = '' } = await Swal.fire<string>({
       title: 'Creando hospital',
       text: 'Ingrese el nombre del nuevo hospital',
       input: 'text',
