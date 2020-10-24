@@ -30,6 +30,10 @@ export class UsuarioService {
     return localStorage.getItem('token') || '';
   }
 
+  get role(): 'ADMIN_ROLE' | 'USER_ROLE'{
+    return this.usuario.role;
+  }
+
   get uid(): string{
     return this.usuario.uid || '';
   }
@@ -55,8 +59,15 @@ export class UsuarioService {
     });
   }
 
+  guardarLocalStorage( token: string, menu: any ): void {
+    localStorage.setItem('token', token);
+    localStorage.setItem('menu', JSON.stringify(menu));
+  }
+
   logout(): void {
     localStorage.removeItem('token');
+    localStorage.removeItem('menu');
+
     this.auth2.signOut().then(() => {
       this.ngZone.run(() => {
         this.router.navigateByUrl('/login');
@@ -75,7 +86,7 @@ export class UsuarioService {
         console.log(resp.token);
         const { email, google, nombre, role, img = '', uid } = resp.usuario;
         this.usuario = new Usuario( nombre, email, '', img, google, role, uid );
-        localStorage.setItem('token', resp.token);
+        this.guardarLocalStorage(resp.token, resp.menu);
         return true;
       }),
       catchError( error => of(false) ) // Atrapa el error y devuelve un Observable<false>
@@ -86,7 +97,7 @@ export class UsuarioService {
     return this.http.post(`${ base_url }/usuarios`, formData)
                .pipe(
                   tap( resp => { // Permite realizar una accion secundaria
-                    localStorage.setItem('token', resp.token);
+                    this.guardarLocalStorage(resp.token, resp.menu);
                   })
                );
   }
@@ -104,7 +115,7 @@ export class UsuarioService {
     return this.http.post(`${ base_url }/auth`, formData)
                .pipe(
                   tap( resp => { // Permite realizar una accion secundaria
-                    localStorage.setItem('token', resp.token);
+                    this.guardarLocalStorage(resp.token, resp.menu);
                   })
                );
   }
@@ -114,7 +125,7 @@ export class UsuarioService {
     return this.http.post(`${ base_url }/auth/google`, { token })
                .pipe(
                   tap( resp => { // Permite realizar una accion secundaria
-                    localStorage.setItem('token', resp.token);
+                    this.guardarLocalStorage(resp.token, resp.menu);
                   })
                );
   }
